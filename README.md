@@ -1,37 +1,48 @@
-# RCS Detection Range Calculator
+# RadarLoss2Range
 
-Converts radar cross-section (RCS) values into real-world radar detection range using the radar range equation — a companion tool for the Stealthene project. Turns "we reduced RCS by X%" into "detection range dropped from A km to B km," the number that actually matters for survivability.
+Converts a coating's frequency-dependent reflection loss (RL) into real-world radar detection range using the radar range equation — a companion tool for the Stealthene project. Turns "reflection loss vs. frequency" into "detection range dropped from A km to B km across X-band," the number that actually matters for survivability.
 
 ## Why this exists
 
-An RCS reduction percentage alone doesn't mean much on its own. This tool closes the loop: plug in a target's RCS (before/after graphene RAM coating) and get the actual distance at which a given radar can detect it. It's the difference between a materials science result and an operational one.
+An RL(dB) curve from a VNA/waveguide measurement doesn't mean much on its own. This tool closes the loop: convert measured reflection loss into an effective RCS reduction, then run it through the radar range equation to get actual detection range, before vs. after coating, across the X-band. It's the difference between a materials-science result and an operational one.
 
-## The Physics
+## The Pipeline
 
-Radar range equation:
+1. **RL(f) → RCS reduction**: reflection coefficient `|Γ| = 10^(-RL/20)`, reflected power fraction `|Γ|²`, applied to a baseline reference RCS (σ_coated = σ_baseline × |Γ|²). Assumes normal incidence, single-layer coating — a stated simplification, not hidden.
+2. **Radar range equation**:
 
-R_max = [ (Pt · G² · λ² · σ) / ((4π)³ · Pmin) ]^(1/4)
+   R_max = [ (Pt · G² · λ² · σ) / ((4π)³ · Pmin) ]^(1/4)
 
-- Pt — radar transmit power
-- G — antenna gain
-- λ — radar wavelength (from frequency)
-- σ — target RCS
-- Pmin — minimum detectable received power
+   - Pt — radar transmit power
+   - G — antenna gain
+   - λ — radar wavelength (from frequency)
+   - σ — target RCS (from step 1)
+   - Pmin — minimum detectable received power
+3. **Sweep** across X-band (8–12 GHz) baseline vs. coated → CSV output.
+4. **Plot**: detection range vs. frequency, before/after.
 
-Sweep σ across baseline vs. coated values to generate a direct before/after detection-range comparison.
+## Data source
+
+Currently seeded with published/literature graphene RAM reflection-loss curves as a placeholder. Architecture is built to drop in real VNA-measured RL(f) data from the Stealthene research once available — no rework needed.
 
 ## Status
 
-🚧 In progress — building core equation and config structure.
+🚧 In progress. Core range equation implemented and sanity-tested in C++. Building config loader and RL→RCS conversion module next.
 
 ## Roadmap
 
-- [ ] Core radar range equation in C++
-- [ ] Radar spec config (Pt, G, frequency, Pmin) — JSON, same pattern as ASTRA
-- [ ] RCS sweep (baseline vs. coated) → CSV output
-- [ ] Python plot: detection range vs. RCS
+- [x] Core radar range equation in C++ (sanity-tested)
+- [ ] Radar spec config (Pt, G, frequency, Pmin) — JSON, dB→linear conversion for gain
+- [ ] RL(f) → RCS conversion module
+- [ ] RCS sweep (baseline vs. coated) → CSV output, X-band
+- [ ] Python plot: detection range vs. frequency
 
 ## Tech Stack
 
-- C++ (core calculation)
-- Python / matplotlib (plotting)
+- C++ (core calculation: radar spec struct, RL→RCS conversion, range equation, sweep logic)
+- Python / matplotlib (plotting only)
+
+## Known Limitations
+
+- Not a full EM/geometry-based RCS solver — this is a detection-range estimator from measured/published reflection data, not first-principles RCS computation.
+- RL→RCS conversion assumes normal incidence and a simplified baseline reference target.
