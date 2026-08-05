@@ -1,13 +1,10 @@
 #include <iostream>
 #include "RadarSpec.h"
 #include "RadarRange.h"
+#include "ConfigLoader.h"
 
 int main() {
-    RadarSpec radar;
-    radar.Pt = 500000.0;        // 500 kW
-    radar.G = 2511.9;           // 34 dB converted to linear (10^(34/10))
-    radar.freqHz = 3e9;         // 3 GHz
-    radar.Pmin = 1e-13;         // typical minimum detectable power, watts
+    RadarSpec radar = loadRadarSpec("data/config.json");
 
     double sigma = 1.0;         // 1 m^2 target, simple reference case
 
